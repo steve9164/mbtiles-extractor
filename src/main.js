@@ -25,6 +25,7 @@ const options = yargs
     .option('bucket', {describe: 'The name of the bucket', type: 'string'})
     .option('awsProfile', {describe: 'A named profile to use', type: 'string'})
     .option('acl', {describe: 'ACL of the uploaded file', type: 'string', default: 'public-read'})
+    .option('useBucketAcl', {describe: 'Do not send an ACL on PutObject requests, objects will inherit bucket ACL', type: 'boolean', default: false})
 
     // Local storage options
     .option('localOutDir', {describe: 'A directory to place the files in locally', type: 'string'})
@@ -105,12 +106,14 @@ let contentEncoding = null
 
 const putInBucket = pThrottle(row => new Promise((resolve) => {
     const tileOptions = {
-        ACL: options.acl,
         Body: row.tile_data,
         Bucket: options.bucket,
         Key: getOutputFilename(row),
         ContentType: contentType,
         ContentEncoding: contentEncoding
+    }
+    if (!options.useBucketAcl) {
+        tileOptions.ACL = options.acl;
     }
 
     s3.putObject(tileOptions, function(err) {
